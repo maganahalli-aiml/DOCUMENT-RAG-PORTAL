@@ -1,0 +1,8 @@
+# Ignore environment variable files
+.env
+document_portal.egg-info
+logs/
+# Ignore Python cache files
+__pycache__/
+*.pyc
+test.py
