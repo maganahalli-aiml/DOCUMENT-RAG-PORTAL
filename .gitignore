@@ -6,3 +6,5 @@ logs/
 __pycache__/
 *.pyc
 test.py
+# Ignore large PDF files
+notebook/data/*.pdf
