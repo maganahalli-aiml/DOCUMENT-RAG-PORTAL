@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from utils.config_loader import load_config
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_groq import ChatGroq
+# from langchain_groq import ChatGroq  # Temporarily disabled due to version conflicts
 #from langchain_openai import ChatOpenAI
 from logger.custom_logger import CustomLogger
 from exception.custom_exception import DocumentPortalException
@@ -79,10 +79,13 @@ class ModelLoader:
             return llm
 
         elif provider == "groq":
-            llm=ChatGroq(
-                model=model_name,
-                api_key=self.api_keys["GROQ_API_KEY"],
+            # Temporarily disabled due to version conflicts
+            log.warning("Groq provider is temporarily disabled due to version conflicts. Using Google instead.")
+            # Fallback to Google
+            llm = ChatGoogleGenerativeAI(
+                model="gemini-2.0-flash",
                 temperature=temperature,
+                max_output_tokens=max_tokens
             )
             return llm
             
