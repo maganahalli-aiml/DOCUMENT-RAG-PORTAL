@@ -6,6 +6,19 @@ document_analysis_prompt = ChatPromptTemplate.from_template("""
 You are a highly capable assistant trained to analyze and summarize documents.
 Return ONLY valid JSON matching the exact schema below.
 
+Required JSON format:
+{{
+    "Summary": ["bullet point 1", "bullet point 2", "bullet point 3"],
+    "Title": "document title",
+    "Author": "author name or 'Not Available'",
+    "DateCreated": "creation date or 'Not Available'",
+    "LastModifiedDate": "last modified date or 'Not Available'",
+    "Publisher": "publisher name or 'Not Available'",
+    "Language": "document language",
+    "PageCount": "number of pages or 'Not Available'",
+    "SentimentTone": "positive/negative/neutral"
+}}
+
 {format_instructions}
 
 Analyze this document:

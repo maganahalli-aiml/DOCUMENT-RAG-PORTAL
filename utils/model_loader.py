@@ -71,23 +71,44 @@ class ModelLoader:
         log.info("Loading LLM", provider=provider, model=model_name, temperature=temperature, max_tokens=max_tokens)
 
         if provider == "google":
+            from langchain_google_genai import HarmCategory, HarmBlockThreshold
+            
+            # Configure safety settings to be more permissive for document analysis
+            safety_settings = {
+                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+            }
+            
             llm=ChatGoogleGenerativeAI(
                 model=model_name,
                 temperature=temperature,
                 max_output_tokens=max_tokens,
-                convert_system_message_to_human=True
+                convert_system_message_to_human=True,
+                safety_settings=safety_settings
             )
             return llm
 
         elif provider == "groq":
             # Temporarily disabled due to version conflicts
             log.warning("Groq provider is temporarily disabled due to version conflicts. Using Google instead.")
-            # Fallback to Google
+            # Fallback to Google with safety settings
+            from langchain_google_genai import HarmCategory, HarmBlockThreshold
+            
+            safety_settings = {
+                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+            }
+            
             llm = ChatGoogleGenerativeAI(
                 model="gemini-2.0-flash",
                 temperature=temperature,
                 max_output_tokens=max_tokens,
-                convert_system_message_to_human=True
+                convert_system_message_to_human=True,
+                safety_settings=safety_settings
             )
             return llm
             

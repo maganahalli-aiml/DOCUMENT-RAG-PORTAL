@@ -20,8 +20,8 @@ class DocumentAnalyzer:
             self.loader=ModelLoader()
             self.llm=self.loader.load_llm()
             
-            # Prepare parsers
-            self.parser = JsonOutputParser(pydantic_object=Metadata)
+            # Prepare parsers - using Pydantic v2 compatible approach
+            self.parser = JsonOutputParser()
             self.fixing_parser = OutputFixingParser.from_llm(parser=self.parser, llm=self.llm)
 
             self.prompt = PROMPT_REGISTRY["document_analysis"]
@@ -66,9 +66,14 @@ class DocumentAnalyzer:
                 "document_text": chunked_text
             })
 
-            self.log.info("Metadata extraction successful", keys=list(response.keys()))
-            
-            return response
+            # Validate response against Metadata model
+            try:
+                validated_response = Metadata(**response)
+                self.log.info("Metadata extraction and validation successful", keys=list(response.keys()))
+                return validated_response.model_dump()
+            except Exception as validation_error:
+                self.log.warning(f"Validation failed, returning raw response: {validation_error}")
+                return response
 
         except Exception as e:
             self.log.error("Metadata analysis failed", error=str(e))
