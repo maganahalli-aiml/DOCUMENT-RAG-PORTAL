@@ -74,7 +74,8 @@ class ModelLoader:
             llm=ChatGoogleGenerativeAI(
                 model=model_name,
                 temperature=temperature,
-                max_output_tokens=max_tokens
+                max_output_tokens=max_tokens,
+                convert_system_message_to_human=True
             )
             return llm
 
@@ -85,7 +86,8 @@ class ModelLoader:
             llm = ChatGoogleGenerativeAI(
                 model="gemini-2.0-flash",
                 temperature=temperature,
-                max_output_tokens=max_tokens
+                max_output_tokens=max_tokens,
+                convert_system_message_to_human=True
             )
             return llm
             

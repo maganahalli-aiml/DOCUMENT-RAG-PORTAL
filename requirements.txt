@@ -9,4 +9,7 @@ faiss-cpu
 structlog
 PyMuPDF
 pandas
+streamlit
+streamlit-chat
+pytest
 -e .
