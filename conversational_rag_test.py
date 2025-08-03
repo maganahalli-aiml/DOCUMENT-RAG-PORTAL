@@ -37,10 +37,11 @@ def test_conversational_rag_on_pdf(pdf_path:str, question:str):
                 retriever = ingestor.ingest_files(uploaded_files)
         print("Running Conversational RAG...")
         session_id = "test_conversational_rag"
-        rag = ConversationalRAG(retriever=retriever, session_id=session_id)
         
-        response = rag.invoke(question)
-        print(f"\nQuestion: {question}\nAnswer: {response}")
+        # Use context manager for proper cleanup
+        with ConversationalRAG(retriever=retriever, session_id=session_id) as rag:
+            response = rag.invoke(question)
+            print(f"\nQuestion: {question}\nAnswer: {response}")
                     
     except Exception as e:
         print(f"Test failed: {str(e)}")

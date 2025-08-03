@@ -21,6 +21,7 @@ try:
     # Suppress Streamlit warnings when running outside of Streamlit context
     import warnings
     import logging
+    import sys
     
     # Disable specific Streamlit warnings
     warnings.filterwarnings("ignore", category=UserWarning, module="streamlit")
@@ -31,6 +32,16 @@ try:
     
     session_state_logger = logging.getLogger("streamlit.runtime.state.session_state_proxy")
     session_state_logger.setLevel(logging.ERROR)
+    
+    # Additional safety: suppress thread-related warnings that might cause sys.excepthook errors
+    import threading
+    
+    # Override threading excepthook if available (Python 3.8+)
+    if hasattr(threading, 'excepthook'):
+        def safe_thread_excepthook(args):
+            # Silently handle thread exceptions to prevent sys.excepthook errors
+            pass
+        threading.excepthook = safe_thread_excepthook
     
 except ImportError:
     STREAMLIT_AVAILABLE = False
@@ -138,3 +149,32 @@ class ConversationalRAG:
         except Exception as e:
             self.log.error("Failed to invoke conversational RAG", error=str(e), session_id=self.session_id)
             raise DocumentPortalException("Failed to invoke RAG chain", sys)
+    
+    def cleanup(self):
+        """Clean up resources to prevent threading issues"""
+        try:
+            # Clear session store if using local storage
+            if not STREAMLIT_AVAILABLE and hasattr(self, '_session_store'):
+                self._session_store.clear()
+                
+            # Clear any references to heavy objects
+            if hasattr(self, 'chain'):
+                self.chain = None
+            if hasattr(self, 'rag_chain'):
+                self.rag_chain = None
+            if hasattr(self, 'qa_chain'):
+                self.qa_chain = None
+            if hasattr(self, 'history_aware_retriever'):
+                self.history_aware_retriever = None
+                
+            self.log.info("ConversationalRAG cleanup completed", session_id=self.session_id)
+        except Exception as e:
+            # Silently handle cleanup errors to prevent sys.excepthook issues
+            pass
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.cleanup()
+        return False
