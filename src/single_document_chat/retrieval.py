@@ -17,6 +17,21 @@ from model.models import PromptType
 try:
     import streamlit as st
     STREAMLIT_AVAILABLE = True
+    
+    # Suppress Streamlit warnings when running outside of Streamlit context
+    import warnings
+    import logging
+    
+    # Disable specific Streamlit warnings
+    warnings.filterwarnings("ignore", category=UserWarning, module="streamlit")
+    
+    # Also disable specific loggers that cause the warnings
+    streamlit_logger = logging.getLogger("streamlit.runtime.scriptrunner_utils.script_run_context")
+    streamlit_logger.setLevel(logging.ERROR)
+    
+    session_state_logger = logging.getLogger("streamlit.runtime.state.session_state_proxy")
+    session_state_logger.setLevel(logging.ERROR)
+    
 except ImportError:
     STREAMLIT_AVAILABLE = False
 
@@ -71,7 +86,7 @@ class ConversationalRAG:
     def _get_session_history(self, session_id: str) -> BaseChatMessageHistory:
         try:
             if STREAMLIT_AVAILABLE:
-                # Use Streamlit session state if available
+                # Use Streamlit session state if available (warnings are suppressed globally)
                 if "store" not in st.session_state:
                     st.session_state.store = {}
 
