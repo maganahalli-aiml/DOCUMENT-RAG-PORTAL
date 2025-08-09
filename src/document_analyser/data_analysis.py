@@ -3,7 +3,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from utils.model_loader import ModelLoader
 from logger.custom_logger import CustomLogger
-from exception.custom_exception import DocumentPortalException
+from exception.custom_exception_improved import DocumentPortalExceptionImproved, ExceptionSeverity
 from model.models import Metadata
 from langchain_core.output_parsers import JsonOutputParser
 from langchain.output_parsers import OutputFixingParser
@@ -30,10 +30,8 @@ class DocumentAnalyzer:
             
             
         except Exception as e:
-            self.log.error(f"Error initializing DocumentAnalyzer: {e}")
-            raise DocumentPortalException("Error in DocumentAnalyzer initialization", sys)
-        
-        
+            raise DocumentPortalExceptionImproved("Error initializing DocumentAnalyzer", e, ExceptionSeverity.HIGH)
+
     def _chunk_text(self, text: str, max_chars: int = 15000) -> str:
         """
         Chunk text to fit within model limits. Takes first chunk and last chunk for context.
@@ -77,4 +75,4 @@ class DocumentAnalyzer:
 
         except Exception as e:
             self.log.error("Metadata analysis failed", error=str(e))
-            raise DocumentPortalException("Metadata extraction failed", sys) from e
+            raise DocumentPortalExceptionImproved("Metadata extraction failed", str(e), ExceptionSeverity.HIGH)
