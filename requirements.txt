@@ -8,6 +8,8 @@ pydef
 faiss-cpu
 structlog
 PyMuPDF
+pypdf
+docx2txt
 pandas
 streamlit
 streamlit-chat
