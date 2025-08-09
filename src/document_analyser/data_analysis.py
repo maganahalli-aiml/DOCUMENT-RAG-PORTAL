@@ -3,12 +3,11 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from utils.model_loader import ModelLoader
 from logger.custom_logger import CustomLogger
-from exception.custom_exception import DocumentPortalException
+from exception.custom_exception_improved import DocumentPortalExceptionImproved, ExceptionSeverity
 from model.models import Metadata
-from prompt.prompt_library import prompt
 from langchain_core.output_parsers import JsonOutputParser
 from langchain.output_parsers import OutputFixingParser
-from prompt.prompt_library import *
+from prompt.prompt_library import PROMPT_REGISTRY
 
 class DocumentAnalyzer:
     """
@@ -21,20 +20,18 @@ class DocumentAnalyzer:
             self.loader=ModelLoader()
             self.llm=self.loader.load_llm()
             
-            # Prepare parsers
-            self.parser = JsonOutputParser(pydantic_object=Metadata)
+            # Prepare parsers - using Pydantic v2 compatible approach
+            self.parser = JsonOutputParser()
             self.fixing_parser = OutputFixingParser.from_llm(parser=self.parser, llm=self.llm)
-            
-            self.prompt = prompt
-            
+
+            self.prompt = PROMPT_REGISTRY["document_analysis"]
+
             self.log.info("DocumentAnalyzer initialized successfully")
             
             
         except Exception as e:
-            self.log.error(f"Error initializing DocumentAnalyzer: {e}")
-            raise DocumentPortalException("Error in DocumentAnalyzer initialization", sys)
-        
-        
+            raise DocumentPortalExceptionImproved("Error initializing DocumentAnalyzer", e, ExceptionSeverity.HIGH)
+
     def _chunk_text(self, text: str, max_chars: int = 15000) -> str:
         """
         Chunk text to fit within model limits. Takes first chunk and last chunk for context.
@@ -67,10 +64,15 @@ class DocumentAnalyzer:
                 "document_text": chunked_text
             })
 
-            self.log.info("Metadata extraction successful", keys=list(response.keys()))
-            
-            return response
+            # Validate response against Metadata model
+            try:
+                validated_response = Metadata(**response)
+                self.log.info("Metadata extraction and validation successful", keys=list(response.keys()))
+                return validated_response.model_dump()
+            except Exception as validation_error:
+                self.log.warning(f"Validation failed, returning raw response: {validation_error}")
+                return response
 
         except Exception as e:
             self.log.error("Metadata analysis failed", error=str(e))
-            raise DocumentPortalException("Metadata extraction failed", sys) from e
+            raise DocumentPortalExceptionImproved("Metadata extraction failed", str(e), ExceptionSeverity.HIGH)

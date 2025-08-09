@@ -3,7 +3,7 @@ import fitz # required to load PDF documents
 import uuid
 from datetime import datetime
 from logger.custom_logger import CustomLogger
-from exception.custom_exception import DocumentPortalException
+from exception.custom_exception_improved import DocumentPortalExceptionImproved, ExceptionSeverity
 
 from utils.model_loader import ModelLoader
 
@@ -30,8 +30,7 @@ class DocumentHandler:
             self.log.info("PDFHandler initialized", session_id=self.session_id, session_path=self.session_path)
 
         except Exception as e:
-            self.log.error(f"Error initializing DocumentHandler: {e}")
-            raise DocumentPortalException("Error initializing DocumentHandler", e) from e
+            raise DocumentPortalExceptionImproved("Error initializing DocumentAnalyzer", e, ExceptionSeverity.HIGH)
 
     def save_pdf(self, uploaded_file):
         """
@@ -41,7 +40,7 @@ class DocumentHandler:
             filename = os.path.basename(uploaded_file.name)
             
             if not filename.lower().endswith(".pdf"):
-                raise DocumentPortalException("Invalid file type. Only PDFs are allowed.")
+                raise DocumentPortalExceptionImproved("Invalid file type. Only PDFs are allowed.")
 
             save_path = os.path.join(self.session_path, filename)
             
@@ -53,9 +52,9 @@ class DocumentHandler:
             return save_path
         
         except Exception as e:
-            self.log.error(f"Error saving PDF: {e}")
-            raise DocumentPortalException("Error saving PDF", e) from e
         
+            raise DocumentPortalExceptionImproved("Error saving PDF", e, ExceptionSeverity.CRITICAL)
+
 
     def read_pdf(self, pdf_path:str)->str:
         try:
@@ -68,9 +67,8 @@ class DocumentHandler:
             self.log.info("PDF read successfully", pdf_path=pdf_path, session_id=self.session_id, pages=len(text_chunks))
             return text
         except Exception as e:
-            self.log.error(f"Error reading PDF: {e}")
-            raise DocumentPortalException("Error reading PDF", e) from e
-        
+            raise DocumentPortalExceptionImproved("Error reading PDF", e, ExceptionSeverity.CRITICAL)
+
 if __name__ == "__main__":
     from pathlib import Path
     from io import BytesIO

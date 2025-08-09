@@ -9,3 +9,4 @@ test.py
 # Ignore large PDF files
 notebook/data/*.pdf
 data/*.pdf
+faiss_index/

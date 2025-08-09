@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from utils.config_loader import load_config
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_groq import ChatGroq
+# from langchain_groq import ChatGroq  # Temporarily disabled due to version conflicts
 #from langchain_openai import ChatOpenAI
 from logger.custom_logger import CustomLogger
 from exception.custom_exception import DocumentPortalException
@@ -71,18 +71,44 @@ class ModelLoader:
         log.info("Loading LLM", provider=provider, model=model_name, temperature=temperature, max_tokens=max_tokens)
 
         if provider == "google":
+            from langchain_google_genai import HarmCategory, HarmBlockThreshold
+            
+            # Configure safety settings to be more permissive for document analysis
+            safety_settings = {
+                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+            }
+            
             llm=ChatGoogleGenerativeAI(
                 model=model_name,
                 temperature=temperature,
-                max_output_tokens=max_tokens
+                max_output_tokens=max_tokens,
+                convert_system_message_to_human=True,
+                safety_settings=safety_settings
             )
             return llm
 
         elif provider == "groq":
-            llm=ChatGroq(
-                model=model_name,
-                api_key=self.api_keys["GROQ_API_KEY"],
+            # Temporarily disabled due to version conflicts
+            log.warning("Groq provider is temporarily disabled due to version conflicts. Using Google instead.")
+            # Fallback to Google with safety settings
+            from langchain_google_genai import HarmCategory, HarmBlockThreshold
+            
+            safety_settings = {
+                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+            }
+            
+            llm = ChatGoogleGenerativeAI(
+                model="gemini-2.0-flash",
                 temperature=temperature,
+                max_output_tokens=max_tokens,
+                convert_system_message_to_human=True,
+                safety_settings=safety_settings
             )
             return llm
             
