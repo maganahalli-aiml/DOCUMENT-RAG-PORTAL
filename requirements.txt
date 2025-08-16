@@ -4,7 +4,8 @@ ipykernel
 langchain_groq
 langchain_google_genai
 langchain_community
-pydef
+langchain-text-splitters
+pydantic
 faiss-cpu
 structlog
 PyMuPDF
@@ -13,5 +14,7 @@ docx2txt
 pandas
 streamlit
 streamlit-chat
+python-multipart
+jinja2
 pytest
 -e .

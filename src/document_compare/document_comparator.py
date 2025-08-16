@@ -40,12 +40,17 @@ class DocumentComparatorLLM:
             self.log.error(f"Error in compare_documents: {e}")
             raise DocumentPortalException("An error occurred while comparing documents.",sys)
     
-    def _format_response(self,response_parsed: list[dict]) -> pd.DataFrame: #type: ignore
+    def _format_response(self,response_parsed: dict) -> pd.DataFrame: #type: ignore
         """
         Formats the response from the LLM into a structured format.
         """
         try:
-            df = pd.DataFrame(response_parsed)
+            # The response_parsed is the SummaryResponse with 'root' key containing the list
+            if isinstance(response_parsed, dict) and 'root' in response_parsed:
+                df = pd.DataFrame(response_parsed['root'])
+            else:
+                # Fallback for other formats
+                df = pd.DataFrame(response_parsed)
             self.log.info("Response formatted into DataFrame", dataframe=df)
             return df
         except Exception as e:
