@@ -17,6 +17,7 @@ streamlit-chat
 python-multipart
 jinja2
 pytest
+httpx
 fastapi
 uvicorn[standard]
 -e .
