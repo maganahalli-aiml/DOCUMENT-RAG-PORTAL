@@ -1,13 +1,87 @@
-# Ignore environment variable files
+# Environment files
 .env
-document_portal.egg-info
-logs/
-# Ignore Python cache files
+.env.*
+
+# Python cache and compiled files
 __pycache__/
-*.pyc
-test.py
-# Ignore large PDF files
-notebook/data/*.pdf
-data/*.pdf
+*.py[cod]
+*.so
+*.egg-info/
+document_portal.egg-info/
+
+# Logs and runtime files
+logs/
+*.log
+nohup.out
+api.log
+streamlit.log
+deployment.log
+.fastapi_pid
+.streamlit_pid
+
+# Data and uploads
+data/uploaded_*
+data/session_*/
+data/multi_doc_chat/
+data/document_analysis/
+data/document_compare/
+data/single_document_chat/
+data/multi_document_chat/
+data/test_session_*/
+test_doc_*.md
+test_document.md
+test_sample.csv
+products_inventory.csv
+
+# AI/ML generated files
 faiss_index/
-archive
+*.faiss
+*.pkl
+
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# React build artifacts
+build/
+dist/
+.next/
+out/
+
+# IDE and OS files
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Large data files
+*.pdf
+*.docx
+*.pptx
+*.csv
+notebook/data/
+archive/
+backup/
+
+# Evaluation results
+evaluation_results/
+*.json
+*.md
+
+# Streamlit cache
+.streamlit/
+
+# Development backups
+streamlit_ui_backup*.py
+streamlit_ui_new.py
+streamlit_ui_simple.py
