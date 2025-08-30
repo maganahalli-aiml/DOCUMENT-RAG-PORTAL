@@ -124,10 +124,60 @@ const DocumentAnalysis: React.FC = () => {
 
               {result.summary && (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">AI Analysis Insights</h4>
+                  <h4 className="font-medium text-gray-900 mb-2">AI Analysis Summary</h4>
                   <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                     <p className="text-blue-900">{result.summary}</p>
                   </div>
+                </div>
+              )}
+
+              {result.ai_insights && (
+                <div className="space-y-4">
+                  <h4 className="font-medium text-gray-900 mb-2">📊 Detailed AI Analysis</h4>
+                  
+                  {/* Document Metadata */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <h5 className="font-medium text-gray-800 mb-1">📄 Document Info</h5>
+                      <p className="text-sm text-gray-600">Title: {result.ai_insights.Title}</p>
+                      <p className="text-sm text-gray-600">Author: {result.ai_insights.Author}</p>
+                      <p className="text-sm text-gray-600">Language: {result.ai_insights.Language}</p>
+                    </div>
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <h5 className="font-medium text-gray-800 mb-1">📈 Analysis Results</h5>
+                      <p className="text-sm text-gray-600">Pages: {result.ai_insights.PageCount}</p>
+                      <p className="text-sm text-gray-600">Sentiment: <span className="capitalize">{result.ai_insights.SentimentTone}</span></p>
+                      <p className="text-sm text-gray-600">Publisher: {result.ai_insights.Publisher}</p>
+                    </div>
+                  </div>
+
+                  {/* Key Insights Summary */}
+                  {result.ai_insights.Summary && result.ai_insights.Summary.length > 0 && (
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <h5 className="font-medium text-green-800 mb-2">🔍 Key Insights</h5>
+                      <ul className="space-y-1">
+                        {result.ai_insights.Summary.map((insight: string, index: number) => (
+                          <li key={index} className="text-sm text-green-700 flex items-start">
+                            <span className="mr-2">•</span>
+                            <span>{insight}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Document Timeline */}
+                  {(result.ai_insights.DateCreated !== "Not Available" || result.ai_insights.LastModifiedDate !== "Not Available") && (
+                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <h5 className="font-medium text-yellow-800 mb-1">📅 Document Timeline</h5>
+                      {result.ai_insights.DateCreated !== "Not Available" && (
+                        <p className="text-sm text-yellow-700">Created: {result.ai_insights.DateCreated}</p>
+                      )}
+                      {result.ai_insights.LastModifiedDate !== "Not Available" && (
+                        <p className="text-sm text-yellow-700">Last Modified: {result.ai_insights.LastModifiedDate}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

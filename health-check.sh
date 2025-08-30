@@ -67,19 +67,19 @@ total_services=0
 
 # Check Frontend (through nginx proxy)
 total_services=$((total_services + 1))
-if check_http "http://localhost" "Frontend (via nginx)"; then
+if check_http "http://localhost:3002" "Frontend (via nginx)"; then
     healthy_services=$((healthy_services + 1))
 fi
 
 # Check API directly
 total_services=$((total_services + 1))
-if check_http "http://localhost/api/health" "API Health Endpoint"; then
+if check_http "http://localhost:8080/health" "API Health Endpoint"; then
     healthy_services=$((healthy_services + 1))
 fi
 
 # Check API docs
 total_services=$((total_services + 1))
-if check_http "http://localhost/api/docs" "API Documentation"; then
+if check_http "http://localhost:8080/docs" "API Documentation"; then
     healthy_services=$((healthy_services + 1))
 fi
 
@@ -124,9 +124,9 @@ if [ $healthy_services -eq $total_services ]; then
     print_status "${GREEN}All services are healthy ($healthy_services/$total_services)${NC}"
     echo ""
     echo "Application URLs:"
-    echo "  Frontend: http://localhost"
-    echo "  API Docs: http://localhost/api/docs"
-    echo "  API Health: http://localhost/api/health"
+    echo "  Frontend: http://localhost:3002"
+    echo "  API Docs: http://localhost:8080/docs"
+    echo "  API Health: http://localhost:8080/health"
     
     if docker-compose ps | grep -q prometheus; then
         echo "  Prometheus: http://localhost:9090"

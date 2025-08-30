@@ -50,6 +50,7 @@ export interface AnalysisResponse {
   preview?: string;
   summary?: string;
   error?: string;
+  timestamp?: string;
   // Legacy fields for backward compatibility
   file_info?: {
     size_mb: number;
@@ -57,6 +58,18 @@ export interface AnalysisResponse {
     processing_time: number;
   };
   content_preview?: string;
+  // Enhanced AI analysis fields
+  ai_insights?: {
+    Summary: string[];
+    Title: string;
+    Author: string;
+    DateCreated: string;
+    LastModifiedDate: string;
+    Publisher: string;
+    Language: string;
+    PageCount: string;
+    SentimentTone: string;
+  };
 }
 
 export interface ComparisonResponse {
