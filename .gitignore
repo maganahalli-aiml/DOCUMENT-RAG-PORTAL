@@ -1,6 +1,17 @@
 # Environment files
 .env
 .env.*
+!.env.template
+
+# API Keys and secrets (extra protection)
+**/secrets.yaml
+**/secrets.yml
+**/*secret*
+**/*key*
+**/*.pem
+**/*.key
+**/*.crt
+**/api_keys.txt
 
 # Python cache and compiled files
 __pycache__/
@@ -14,12 +25,13 @@ logs/
 *.log
 nohup.out
 api.log
+api_*.log
 streamlit.log
 deployment.log
 .fastapi_pid
 .streamlit_pid
 
-# Data and uploads
+# Data and uploads (ignore all user data)
 data/uploaded_*
 data/session_*/
 data/multi_doc_chat/
@@ -27,14 +39,21 @@ data/document_analysis/
 data/document_compare/
 data/single_document_chat/
 data/multi_document_chat/
-data/test_session_*/
+data/test_session*/
+data/test_multi_files_*/
 test_doc_*.md
-test_document.md
+test_doc*.txt
+test_document*.md
 test_sample.csv
+test_upload.txt
+test_analysis.txt
+test_doc_comparison_*.txt
 products_inventory.csv
+realistic_credit_card.csv
 
 # AI/ML generated files
 faiss_index/
+test_index/
 *.faiss
 *.pkl
 
@@ -76,7 +95,8 @@ backup/
 # Evaluation results
 evaluation_results/
 *.json
-*.md
+test_*.md
+test_document*.md
 
 # Streamlit cache
 .streamlit/
@@ -85,3 +105,24 @@ evaluation_results/
 streamlit_ui_backup*.py
 streamlit_ui_new.py
 streamlit_ui_simple.py
+streamlit_ui_fixed.py
+
+# Docker and deployment files (keep templates, ignore runtime)
+.cleanup-list
+docker-data/
+monitoring/data/
+postgres/data/
+redis/data/
+
+# Test and development files
+test_*.py
+test_*.txt
+test_*.csv
+quick_rag_evaluation.py
+run_rag_evaluation_suite.py
+
+# AWS and deployment artifacts
+check-shutdown-status.sh
+complete-aws-shutdown.sh
+cloudformation-template.yml
+deploy-to-aws.sh

@@ -15,10 +15,12 @@ class DocumentComparatorLLM:
         self.log = CustomLogger().get_logger(__name__)
         self.loader = ModelLoader()
         self.llm = self.loader.load_llm()
-        self.parser = JsonOutputParser(pydantic_object=SummaryResponse)
+        
+        # Use basic JSON parser to avoid pydantic validation issues
+        self.parser = JsonOutputParser()
         self.fixing_parser = OutputFixingParser.from_llm(parser=self.parser, llm=self.llm)
         self.prompt = PROMPT_REGISTRY["document_comparison"]
-        self.chain = self.prompt | self.llm | self.parser  
+        self.chain = self.prompt | self.llm | self.fixing_parser  # Use fixing parser in chain
         self.log.info("DocumentComparatorLLM initialized with model and parser.")
 
     def compare_documents(self,combined_docs: str) -> pd.DataFrame:

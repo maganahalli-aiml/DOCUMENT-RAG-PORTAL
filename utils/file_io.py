@@ -12,7 +12,9 @@ from utils.model_loader import ModelLoader
 from logger.custom_logger import CustomLogger
 from exception.custom_exception import DocumentPortalException
 log = CustomLogger().get_logger(__name__)
-SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt"}
+
+# Updated to support all document processor file types
+SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt", ".csv", ".xlsx", ".md", ".ppt", ".pptx"}
 
 # ----------------------------- #
 # Helpers (file I/O + loading)  #

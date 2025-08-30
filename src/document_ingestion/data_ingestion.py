@@ -18,11 +18,13 @@ from langchain_community.vectorstores import FAISS
 from utils.model_loader import ModelLoader
 from logger.custom_logger import CustomLogger
 from exception.custom_exception import DocumentPortalException
+from .document_processors import DocumentProcessorFactory
 
 from utils.file_io import _session_id, save_uploaded_files
 from utils.document_ops import load_documents, concat_for_analysis, concat_for_comparison
 
-SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt"}
+# Updated to support all document processor file types  
+SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt", ".csv", ".xlsx", ".md", ".ppt", ".pptx"}
 
 # FAISS Manager (load-or-create)
 class FaissManager:
@@ -80,11 +82,19 @@ class FaissManager:
     
     def load_or_create(self,texts:Optional[List[str]]=None, metadatas: Optional[List[dict]] = None):
         if self._exists():
-            self.vs = FAISS.load_local(
-                str(self.index_dir),
-                embeddings=self.emb,
-                allow_dangerous_deserialization=True,
-            )
+            try:
+                # Try with allow_dangerous_deserialization for older versions
+                self.vs = FAISS.load_local(
+                    str(self.index_dir),
+                    embeddings=self.emb,
+                    allow_dangerous_deserialization=True,
+                )
+            except TypeError:
+                # Newer FAISS versions don't support allow_dangerous_deserialization
+                self.vs = FAISS.load_local(
+                    str(self.index_dir),
+                    embeddings=self.emb,
+                )
             return self.vs
         if not texts:
             raise DocumentPortalException("No existing FAISS index and no data to create one")
@@ -145,7 +155,26 @@ class ChatIngestor:
         k: int = 5,):
         try:
             paths = save_uploaded_files(uploaded_files, self.temp_dir)
-            docs = load_documents(paths)
+            
+            # Try to use enhanced document processors first
+            docs = []
+            try:
+                from src.document_ingestion.document_processors import DocumentProcessorFactory
+                for path in paths:
+                    try:
+                        processor = DocumentProcessorFactory.get_processor(str(path))
+                        processed_docs = processor.process(str(path))
+                        docs.extend(processed_docs)
+                        print(f"Enhanced processing: {path.name} -> {len(processed_docs)} chunks")
+                    except Exception as e:
+                        print(f"Enhanced processor failed for {path.name}: {e}, falling back to basic loader")
+                        # Fallback to basic loading
+                        fallback_docs = load_documents([path])
+                        docs.extend(fallback_docs)
+            except Exception as e:
+                print(f"Enhanced processors not available: {e}, using basic loaders")
+                docs = load_documents(paths)
+            
             if not docs:
                 raise ValueError("No valid documents loaded")
             
@@ -230,18 +259,19 @@ class DocumentComparator:
         try:
             ref_path = self.session_path / reference_file.name
             act_path = self.session_path / actual_file.name
+            
+            # Save files to disk
             for fobj, out in ((reference_file, ref_path), (actual_file, act_path)):
-                if not fobj.name.lower().endswith(".pdf"):
-                    raise ValueError("Only PDF files are allowed.")
                 with open(out, "wb") as f:
                     if hasattr(fobj, "read"):
                         f.write(fobj.read())
                     else:
                         f.write(fobj.getbuffer())
+            
             self.log.info("Files saved", reference=str(ref_path), actual=str(act_path), session=self.session_id)
             return ref_path, act_path
         except Exception as e:
-            self.log.error("Error saving PDF files", error=str(e), session=self.session_id)
+            self.log.error("Error saving files", error=str(e), session=self.session_id)
             raise DocumentPortalException("Error saving files", e) from e
 
     def read_pdf(self, pdf_path: Path) -> str:
@@ -261,13 +291,48 @@ class DocumentComparator:
             self.log.error("Error reading PDF", file=str(pdf_path), error=str(e))
             raise DocumentPortalException("Error reading PDF", e) from e
 
+    def _read_text_file(self, file_path: Path) -> str:
+        """
+        Read text-based files (txt, md, etc.)
+        """
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            self.log.info("Text file read successfully", file=str(file_path), length=len(content))
+            return content
+        except Exception as e:
+            self.log.error("Error reading text file", file=str(file_path), error=str(e))
+            raise DocumentPortalException("Error reading text file", e) from e
+
     def combine_documents(self) -> str:
         try:
             doc_parts = []
             for file in sorted(self.session_path.iterdir()):
-                if file.is_file() and file.suffix.lower() == ".pdf":
-                    content = self.read_pdf(file)
-                    doc_parts.append(f"Document: {file.name}\n{content}")
+                if file.is_file():
+                    try:
+                        # Use DocumentProcessorFactory to handle different file types
+                        file_ext = file.suffix.lower().lstrip('.')
+                        processor = DocumentProcessorFactory.get_processor(file_ext)
+                        documents = processor.process(str(file))
+                        
+                        # Combine all document chunks into a single content string
+                        content_parts = []
+                        for doc in documents:
+                            content_parts.append(doc.page_content)
+                        content = "\n".join(content_parts)
+                        
+                        doc_parts.append(f"Document: {file.name}\n{content}")
+                    except Exception as file_error:
+                        self.log.warning(f"Could not process file {file.name}: {file_error}")
+                        # Fallback to reading as text file
+                        try:
+                            with open(file, 'r', encoding='utf-8') as f:
+                                content = f.read()
+                            doc_parts.append(f"Document: {file.name}\n{content}")
+                        except Exception as text_error:
+                            self.log.error(f"Failed to read file {file.name}: {text_error}")
+                            continue
+            
             combined_text = "\n\n".join(doc_parts)
             self.log.info("Documents combined", count=len(doc_parts), session=self.session_id)
             return combined_text
