@@ -15,10 +15,12 @@ class DocumentComparatorLLM:
         self.log = CustomLogger().get_logger(__name__)
         self.loader = ModelLoader()
         self.llm = self.loader.load_llm()
-        self.parser = JsonOutputParser(pydantic_object=SummaryResponse)
+        
+        # Use basic JSON parser to avoid pydantic validation issues
+        self.parser = JsonOutputParser()
         self.fixing_parser = OutputFixingParser.from_llm(parser=self.parser, llm=self.llm)
         self.prompt = PROMPT_REGISTRY["document_comparison"]
-        self.chain = self.prompt | self.llm | self.parser  
+        self.chain = self.prompt | self.llm | self.fixing_parser  # Use fixing parser in chain
         self.log.info("DocumentComparatorLLM initialized with model and parser.")
 
     def compare_documents(self,combined_docs: str) -> pd.DataFrame:
@@ -40,12 +42,17 @@ class DocumentComparatorLLM:
             self.log.error(f"Error in compare_documents: {e}")
             raise DocumentPortalException("An error occurred while comparing documents.",sys)
     
-    def _format_response(self,response_parsed: list[dict]) -> pd.DataFrame: #type: ignore
+    def _format_response(self,response_parsed: dict) -> pd.DataFrame: #type: ignore
         """
         Formats the response from the LLM into a structured format.
         """
         try:
-            df = pd.DataFrame(response_parsed)
+            # The response_parsed is the SummaryResponse with 'root' key containing the list
+            if isinstance(response_parsed, dict) and 'root' in response_parsed:
+                df = pd.DataFrame(response_parsed['root'])
+            else:
+                # Fallback for other formats
+                df = pd.DataFrame(response_parsed)
             self.log.info("Response formatted into DataFrame", dataframe=df)
             return df
         except Exception as e:

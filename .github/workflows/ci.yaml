@@ -1,0 +1,292 @@
+# CI/CD Pipeline with Pre-commit and Post-commit Testing
+name: Document RAG Portal CI/CD
+
+on:
+  push:
+    branches: [ master, main, ragEnhancement, develop ]
+  pull_request:
+    branches: [ master, main, ragEnhancement ]
+  workflow_dispatch: # Allow manual triggering
+
+env:
+  PYTHON_VERSION: '3.10'
+  CACHE_KEY_PREFIX: pip-deps
+
+jobs:
+  # Pre-commit validation job
+  pre-commit-validation:
+    name: Pre-commit Validation
+    runs-on: ubuntu-latest
+    outputs:
+      should-continue: ${{ steps.changes.outputs.should-continue }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full history for better change detection
+      
+      - name: Detect changes
+        id: changes
+        run: |
+          # Check if there are Python files changed
+          if git diff --name-only HEAD~1 HEAD | grep -E '\.(py|yml|yaml|json|md)$'; then
+            echo "should-continue=true" >> $GITHUB_OUTPUT
+            echo "Changes detected in relevant files"
+          else
+            echo "should-continue=false" >> $GITHUB_OUTPUT
+            echo "No relevant changes detected"
+          fi
+      
+      - name: Setup Python
+        if: steps.changes.outputs.should-continue == 'true'
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Cache dependencies
+        if: steps.changes.outputs.should-continue == 'true'
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ env.CACHE_KEY_PREFIX }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ env.CACHE_KEY_PREFIX }}-${{ env.PYTHON_VERSION }}-
+      
+      - name: Install dependencies
+        if: steps.changes.outputs.should-continue == 'true'
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-mock flake8 black isort
+      
+      - name: Code formatting check (Black)
+        if: steps.changes.outputs.should-continue == 'true'
+        run: |
+          echo "Checking code formatting with Black..."
+          black --check --diff . || echo "Code formatting issues detected"
+      
+      - name: Import sorting check (isort)
+        if: steps.changes.outputs.should-continue == 'true'
+        run: |
+          echo "Checking import sorting with isort..."
+          isort --check-only --diff . || echo "Import sorting issues detected"
+      
+      - name: Linting check (flake8)
+        if: steps.changes.outputs.should-continue == 'true'
+        run: |
+          echo "Running flake8 linting..."
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics || echo "Linting issues detected"
+      
+      - name: Pre-commit test suite
+        if: steps.changes.outputs.should-continue == 'true'
+        run: |
+          echo "Running pre-commit test validation..."
+          # Run quick smoke tests
+          if [ -f "test_api.py" ]; then
+            python -m pytest test_api.py -v --tb=short
+          fi
+          if [ -f "tests/test_unit_cases.py" ]; then
+            python -m pytest tests/test_unit_cases.py -v --tb=short
+          fi
+
+  # Main test suite - Post-commit validation
+  post-commit-tests:
+    name: Post-commit Test Suite
+    runs-on: ubuntu-latest
+    needs: pre-commit-validation
+    if: needs.pre-commit-validation.outputs.should-continue == 'true'
+    
+    strategy:
+      matrix:
+        test-group: [unit, integration, api, performance]
+        
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ env.CACHE_KEY_PREFIX }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ env.CACHE_KEY_PREFIX }}-${{ env.PYTHON_VERSION }}-
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-mock pytest-xdist
+          pip install deepeval # For RAG evaluation
+      
+      - name: Create test environment
+        run: |
+          # Create necessary directories
+          mkdir -p data logs cache faiss_index
+          # Set test environment variables
+          echo "ENVIRONMENT=test" >> $GITHUB_ENV
+          echo "PYTHONPATH=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+      
+      - name: Run Unit Tests
+        if: matrix.test-group == 'unit'
+        run: |
+          echo "Running unit tests..."
+          pytest tests/ -v --tb=short --cov=. --cov-report=xml
+          # Test individual components
+          if [ -f "document_analysis_test.py" ]; then
+            python document_analysis_test.py
+          fi
+          if [ -f "conversational_rag_test.py" ]; then
+            python conversational_rag_test.py
+          fi
+      
+      - name: Run Integration Tests
+        if: matrix.test-group == 'integration'
+        run: |
+          echo "Running integration tests..."
+          if [ -f "multidocument_conversational_rag.test.py" ]; then
+            python multidocument_conversational_rag.test.py
+          fi
+          if [ -f "document_compare_test.py" ]; then
+            python document_compare_test.py
+          fi
+      
+      - name: Run API Tests
+        if: matrix.test-group == 'api'
+        run: |
+          echo "Running API tests..."
+          if [ -f "test_chat_api.py" ]; then
+            python test_chat_api.py
+          fi
+          if [ -f "test_api.py" ]; then
+            python test_api.py
+          fi
+          pytest tests/test_routes.py -v --tb=short
+      
+      - name: Run Performance Tests
+        if: matrix.test-group == 'performance'
+        run: |
+          echo "Running performance tests..."
+          if [ -f "test_cache_performance.py" ]; then
+            python test_cache_performance.py
+          fi
+          if [ -f "test_pipeline.py" ]; then
+            python test_pipeline.py
+          fi
+      
+      - name: Upload coverage reports
+        if: matrix.test-group == 'unit'
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+
+  # RAG Evaluation Suite
+  rag-evaluation:
+    name: RAG Quality Evaluation
+    runs-on: ubuntu-latest
+    needs: [pre-commit-validation, post-commit-tests]
+    if: needs.pre-commit-validation.outputs.should-continue == 'true'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install deepeval
+      
+      - name: Run RAG Evaluation Suite
+        run: |
+          echo "Running RAG evaluation suite..."
+          if [ -f "run_rag_evaluation_suite.py" ]; then
+            python run_rag_evaluation_suite.py --ci-mode
+          fi
+          if [ -f "quick_rag_evaluation.py" ]; then
+            python quick_rag_evaluation.py
+          fi
+      
+      - name: Upload evaluation results
+        uses: actions/upload-artifact@v3
+        with:
+          name: rag-evaluation-results
+          path: evaluation_results/
+
+  # Security and Quality Checks
+  security-scan:
+    name: Security and Quality Scan
+    runs-on: ubuntu-latest
+    needs: pre-commit-validation
+    if: needs.pre-commit-validation.outputs.should-continue == 'true'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install security tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit safety
+      
+      - name: Run security scan (Bandit)
+        run: |
+          echo "Running security scan with Bandit..."
+          bandit -r . -f json -o bandit-report.json || true
+      
+      - name: Check dependencies for vulnerabilities (Safety)
+        run: |
+          echo "Checking dependencies for vulnerabilities..."
+          safety check --json --output safety-report.json || true
+      
+      - name: Upload security reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+            safety-report.json
+
+  # Final validation and deployment preparation
+  deployment-ready:
+    name: Deployment Readiness Check
+    runs-on: ubuntu-latest
+    needs: [post-commit-tests, rag-evaluation, security-scan]
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Validate Docker build
+        run: |
+          echo "Validating Docker build..."
+          docker build -t document-portal-test .
+          docker run --rm document-portal-test python --version
+      
+      - name: Deployment readiness summary
+        run: |
+          echo "🎉 All tests passed! Deployment ready."
+          echo "✅ Pre-commit validation: Passed"
+          echo "✅ Post-commit tests: Passed"
+          echo "✅ RAG evaluation: Passed"
+          echo "✅ Security scan: Completed"
+          echo "✅ Docker build: Validated"

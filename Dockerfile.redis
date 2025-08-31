@@ -1,0 +1,27 @@
+# Optimized Redis Dockerfile
+FROM redis:7.2-alpine
+
+# Install minimal packages and clean up
+RUN apk add --no-cache ca-certificates \
+    && rm -rf /var/cache/apk/* \
+    && rm -rf /tmp/* \
+    && rm -rf /usr/share/doc/* \
+    && rm -rf /usr/share/man/*
+
+# Copy optimized Redis configuration
+COPY redis/redis.conf /usr/local/etc/redis/redis.conf
+
+# Set proper permissions (redis user already exists in base image)
+RUN chmod 644 /usr/local/etc/redis/redis.conf \
+    && chown redis:redis /usr/local/etc/redis/redis.conf
+
+# Switch to non-root user (redis user already exists)
+USER redis
+
+# Use optimized configuration
+CMD ["redis-server", "/usr/local/etc/redis/redis.conf"]
+
+# Add labels
+LABEL maintainer="Document Portal Team"
+LABEL description="Optimized Redis for Document RAG Portal"
+LABEL version="7.2-alpine-optimized"

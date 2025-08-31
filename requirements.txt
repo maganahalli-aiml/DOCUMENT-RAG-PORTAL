@@ -4,7 +4,8 @@ ipykernel
 langchain_groq
 langchain_google_genai
 langchain_community
-pydef
+langchain-text-splitters
+pydantic
 faiss-cpu
 structlog
 PyMuPDF
@@ -13,5 +14,47 @@ docx2txt
 pandas
 streamlit
 streamlit-chat
+python-multipart
+jinja2
 pytest
+httpx
+fastapi
+uvicorn[standard]
+
+# New dependencies for enhanced document processing
+python-pptx
+openpyxl
+pillow
+pytesseract
+markdown
+beautifulsoup4
+sqlalchemy
+pymongo
+unstructured
+tabulate
+opencv-python
+
+# DeepEval for evaluation
+# Evaluation and Testing
+deepeval>=0.21.0
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+pytest-mock>=3.10.0
+
+# Authentication dependencies
+python-jose[cryptography]
+passlib[bcrypt]
+
+# Cache dependencies
+redis
+diskcache
+
+# Pre-commit and code quality
+pre-commit
+black
+isort
+flake8
+mypy
+bandit
+
 -e .
