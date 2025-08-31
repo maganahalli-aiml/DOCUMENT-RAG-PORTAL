@@ -65,6 +65,8 @@ services:
     environment:
       - REACT_APP_API_URL=http://localhost:8080
       - REACT_APP_ENVIRONMENT=production
+      - REACT_APP_ADMIN_PASSWORD=${REACT_APP_ADMIN_PASSWORD:-RagPortal092025}
+      - REACT_APP_GUEST_PASSWORD=${REACT_APP_GUEST_PASSWORD:-guestRagPortal092025}
     volumes:
       - ./frontend/document-rag-portal/build:/app/build:ro
     restart: unless-stopped
@@ -73,16 +75,17 @@ services:
     depends_on:
       - document-portal-api
 
-  # Redis Cache Service (for production caching)
+  # Redis Cache Service (for production caching) - Optimized Build
   redis:
-    image: redis:7-alpine
+    build:
+      context: .
+      dockerfile: Dockerfile.redis
+    image: document-portal-redis:optimized
     container_name: document-portal-redis
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
-      - ./redis/redis.conf:/etc/redis/redis.conf:ro
-    command: redis-server /etc/redis/redis.conf
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
@@ -91,6 +94,15 @@ services:
     restart: unless-stopped
     networks:
       - document-portal-network
+    # Resource limits for optimization
+    deploy:
+      resources:
+        limits:
+          memory: 300M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
 
   # NGINX Reverse Proxy for production
   nginx:
@@ -111,9 +123,12 @@ services:
     profiles:
       - production
 
-  # Development database (PostgreSQL) for advanced features
+  # Development database (PostgreSQL) for advanced features - Optimized Build
   postgres:
-    image: postgres:15-alpine
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
+    image: document-portal-postgres:optimized
     container_name: document-portal-postgres
     ports:
       - "5432:5432"
@@ -121,6 +136,9 @@ services:
       - POSTGRES_DB=document_portal
       - POSTGRES_USER=portal_user
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-portal_password}
+      # Optimized PostgreSQL settings for smaller footprint
+      - POSTGRES_INITDB_ARGS=--data-checksums --encoding=UTF8 --locale=C
+      - POSTGRES_HOST_AUTH_METHOD=md5
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -132,6 +150,15 @@ services:
     restart: unless-stopped
     networks:
       - document-portal-network
+    # Resource limits for optimization
+    deploy:
+      resources:
+        limits:
+          memory: 300M
+          cpus: '1.0'
+        reservations:
+          memory: 200M
+          cpus: '0.5'
 
   # Monitoring and Observability (optional)
   prometheus:

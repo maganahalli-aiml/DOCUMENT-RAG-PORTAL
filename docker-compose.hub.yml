@@ -1,0 +1,157 @@
+# Docker Compose for Production Deployment from Docker Hub
+# Use this file to deploy Document RAG Portal from public Docker Hub images
+
+version: '3.8'
+
+services:
+  # Backend API Service - From Docker Hub
+  document-portal-api:
+    image: dockermaganhalli/document-rag-portal:api-latest
+    container_name: document-portal-api
+    ports:
+      - "8080:8080"
+    volumes:
+      # Mount data directories for persistence
+      - ./data:/app/data
+      - ./faiss_index:/app/faiss_index
+      - ./logs:/app/logs
+      - ./cache:/app/cache
+      - ./config:/app/config:ro
+    environment:
+      # Core application settings
+      - PYTHONPATH=/app
+      - ENVIRONMENT=production
+      
+      # API Keys (should be set via .env file)
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      
+      # Cache settings
+      - CACHE_TYPE=memory
+      - CACHE_SIZE_LIMIT=1000
+      - CACHE_TTL=3600
+      
+      # Performance settings
+      - MAX_FILE_SIZE=52428800
+      - MAX_TEXT_LENGTH=500000
+      - REQUEST_TIMEOUT=120
+      
+      # Security settings
+      - CORS_ORIGINS=http://localhost:3001,http://localhost:80
+      - API_RATE_LIMIT=100
+      
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - document-portal-network
+    depends_on:
+      - redis
+      - postgres
+    
+  # Frontend Service - From Docker Hub
+  document-portal-frontend:
+    image: dockermaganhalli/document-rag-portal:frontend-latest
+    container_name: document-portal-frontend
+    ports:
+      - "3002:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8080
+      - REACT_APP_ENVIRONMENT=production
+      - REACT_APP_ADMIN_PASSWORD=${REACT_APP_ADMIN_PASSWORD:-RagPortal092025}
+      - REACT_APP_GUEST_PASSWORD=${REACT_APP_GUEST_PASSWORD:-guestRagPortal092025}
+    restart: unless-stopped
+    networks:
+      - document-portal-network
+    depends_on:
+      - document-portal-api
+
+  # Optimized Redis Cache Service - From Docker Hub
+  redis:
+    image: dockermaganhalli/document-rag-portal:redis-latest
+    container_name: document-portal-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - document-portal-network
+    deploy:
+      resources:
+        limits:
+          memory: 300M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
+
+  # PostgreSQL Database - Using Standard Image for Compatibility
+  postgres:
+    image: postgres:16-alpine
+    container_name: document-portal-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=document_portal
+      - POSTGRES_USER=portal_user
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-portal_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # Optimized PostgreSQL settings
+    command: >
+      postgres
+      -c shared_buffers=64MB
+      -c effective_cache_size=192MB
+      -c work_mem=4MB
+      -c max_connections=50
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U portal_user -d document_portal"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - document-portal-network
+    deploy:
+      resources:
+        limits:
+          memory: 300M
+          cpus: '1.0'
+        reservations:
+          memory: 200M
+          cpus: '0.5'
+
+volumes:
+  # Persistent data volumes
+  document_data:
+    driver: local
+  faiss_indices:
+    driver: local
+  app_logs:
+    driver: local
+  cache_data:
+    driver: local
+  redis_data:
+    driver: local
+  postgres_data:
+    driver: local
+
+networks:
+  document-portal-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

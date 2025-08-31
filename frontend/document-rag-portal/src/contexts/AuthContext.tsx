@@ -15,10 +15,19 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Default users with credentials
+// Get passwords from environment variables with fallbacks
+const getAdminPassword = (): string => {
+  return process.env.REACT_APP_ADMIN_PASSWORD || 'RagPortal092025';
+};
+
+const getGuestPassword = (): string => {
+  return process.env.REACT_APP_GUEST_PASSWORD || 'guestRagPortal092025';
+};
+
+// Default users with credentials from environment variables
 const defaultUsers: Record<string, { password: string; role: 'admin' | 'guest' }> = {
-  admin: { password: 'RagPortal092025', role: 'admin' },
-  guest: { password: 'guestRagPortal092025', role: 'guest' },
+  admin: { password: getAdminPassword(), role: 'admin' },
+  guest: { password: getGuestPassword(), role: 'guest' },
 };
 
 interface AuthProviderProps {

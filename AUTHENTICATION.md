@@ -1,24 +1,66 @@
 # Authentication System Documentation
 
-## Overview
-The Document RAG Portal now includes a comprehensive authentication system with role-based access control.
+## 🔐 Overview
+The Document RAG Portal includes a comprehensive authentication system with role-based access control and configurable credentials via environment variables.
 
-## User Accounts
+## 🔑 User Accounts Configuration
+
+### Environment Variable Configuration
+User credentials are now configured via environment variables for enhanced security:
+
+```bash
+# Frontend authentication environment variables
+REACT_APP_ADMIN_PASSWORD=your_secure_admin_password
+REACT_APP_GUEST_PASSWORD=your_secure_guest_password
+```
 
 ### Default Users
 The system comes with two pre-configured user accounts:
 
 #### 1. Admin User
 - **Username:** `admin`
-- **Password:** `admin`
+- **Password:** Configured via `REACT_APP_ADMIN_PASSWORD` environment variable
+- **Default Password:** `RagPortal092025` (⚠️ CHANGE FOR PRODUCTION)
 - **Role:** Administrator
 - **Access:** Full access to all features including the Evaluation page
 
 #### 2. Guest User
 - **Username:** `guest`
-- **Password:** `guest`
+- **Password:** Configured via `REACT_APP_GUEST_PASSWORD` environment variable
+- **Default Password:** `guestRagPortal092025` (⚠️ CHANGE FOR PRODUCTION)
 - **Role:** Guest
 - **Access:** Limited access - cannot view the Evaluation page
+
+## 🚨 Security Configuration
+
+### Production Deployment
+**CRITICAL**: Change default passwords before production deployment!
+
+1. **Set Environment Variables:**
+   ```bash
+   export REACT_APP_ADMIN_PASSWORD="your_very_secure_admin_password_here"
+   export REACT_APP_GUEST_PASSWORD="your_very_secure_guest_password_here"
+   ```
+
+2. **Update .env file:**
+   ```bash
+   REACT_APP_ADMIN_PASSWORD=your_very_secure_admin_password_here
+   REACT_APP_GUEST_PASSWORD=your_very_secure_guest_password_here
+   ```
+
+3. **Docker Deployment:**
+   The docker-compose files automatically use environment variables:
+   ```yaml
+   environment:
+     - REACT_APP_ADMIN_PASSWORD=${REACT_APP_ADMIN_PASSWORD:-RagPortal092025}
+     - REACT_APP_GUEST_PASSWORD=${REACT_APP_GUEST_PASSWORD:-guestRagPortal092025}
+   ```
+
+### Password Requirements
+- Minimum 12 characters recommended
+- Include uppercase, lowercase, numbers, and symbols
+- Avoid dictionary words or common patterns
+- Use unique passwords for each environment
 
 ## Features
 
@@ -45,11 +87,12 @@ The system comes with two pre-configured user accounts:
 ## Usage
 
 ### Logging In
-1. Open the application at http://localhost:3001
+1. Open the application at http://localhost:3002
 2. You'll be automatically redirected to the login screen
-3. Enter credentials manually:
-   - For admin access: username: `admin`, password: `admin`
-   - For guest access: username: `guest`, password: `guest`
+3. Enter credentials based on your environment configuration:
+   - **Admin access:** username: `admin`, password: Value of `REACT_APP_ADMIN_PASSWORD`
+   - **Guest access:** username: `guest`, password: Value of `REACT_APP_GUEST_PASSWORD`
+   - **Default development:** Use the fallback passwords if environment variables not set
 
 ### Navigation
 - Once logged in, navigation is filtered based on user role

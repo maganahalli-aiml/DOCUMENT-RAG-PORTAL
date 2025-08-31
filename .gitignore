@@ -2,6 +2,13 @@
 .env
 .env.*
 !.env.template
+!.env.production
+
+# Production environment files with sensitive data
+.env.production
+
+# Frontend environment files with real passwords
+frontend/document-rag-portal/.env
 
 # API Keys and secrets (extra protection)
 **/secrets.yaml
@@ -28,8 +35,15 @@ api.log
 api_*.log
 streamlit.log
 deployment.log
+frontend.log
+serve.log
 .fastapi_pid
 .streamlit_pid
+
+# Git hooks (exclude from repository)
+.git/hooks/pre-commit
+.git/hooks/post-commit
+.git/hooks/pre-push
 
 # Data and uploads (ignore all user data)
 data/uploaded_*
@@ -125,4 +139,5 @@ run_rag_evaluation_suite.py
 check-shutdown-status.sh
 complete-aws-shutdown.sh
 cloudformation-template.yml
-deploy-to-aws.sh
+deploy-to-aws.sh# Temporary files
+git-cleanup.sh

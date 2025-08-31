@@ -1,0 +1,32 @@
+# Optimized PostgreSQL Dockerfile
+FROM postgres:16-alpine
+
+# Install only essential packages
+RUN apk add --no-cache \
+    ca-certificates \
+    tzdata \
+    && rm -rf /var/cache/apk/*
+
+# Remove unnecessary packages and files to reduce image size
+RUN apk del --purge \
+    && rm -rf /tmp/* \
+    && rm -rf /var/tmp/* \
+    && rm -rf /usr/share/doc/* \
+    && rm -rf /usr/share/man/* \
+    && rm -rf /usr/share/info/*
+
+# Create optimized PostgreSQL configuration
+COPY postgres/postgresql.conf /etc/postgresql/postgresql.conf
+COPY postgres/pg_hba.conf /etc/postgresql/pg_hba.conf
+
+# Set up minimal user and permissions
+RUN chmod 600 /etc/postgresql/postgresql.conf \
+    && chmod 600 /etc/postgresql/pg_hba.conf
+
+# Use the optimized configuration
+CMD ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
+
+# Add labels for image metadata
+LABEL maintainer="Document Portal Team"
+LABEL description="Optimized PostgreSQL for Document RAG Portal"
+LABEL version="16-alpine-optimized"
