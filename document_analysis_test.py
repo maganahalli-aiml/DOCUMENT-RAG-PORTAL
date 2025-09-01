@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from src.document_analyser.data_ingestion import DocumentHandler       # Your PDFHandler class
+from src.document_ingestion.data_ingestion import DocHandler       # Your PDFHandler class
 from src.document_analyser.data_analysis import DocumentAnalyzer  # Your DocumentAnalyzer class
 
 # Path to the PDF you want to test
@@ -21,7 +21,7 @@ def main():
         print("Starting PDF ingestion...")
         dummy_pdf = DummyFile(PDF_PATH)
 
-        handler = DocumentHandler(session_id="test_ingestion_analysis")
+        handler = DocHandler(session_id="test_ingestion_analysis")
         
         saved_path = handler.save_pdf(dummy_pdf)
         print(f"PDF saved at: {saved_path}")
