@@ -130,6 +130,7 @@ redis/data/
 
 # Test and development files
 test_*.py
+!test_api.py
 test_*.txt
 test_*.csv
 quick_rag_evaluation.py
