@@ -3,7 +3,9 @@ name: Document RAG Portal CI/CD
 
 on:
   push:
-    branches: [ master, main, ragEnhancement, develop ]
+    branche      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:[ master, main, ragEnhancement, develop ]
   pull_request:
     branches: [ master, main, ragEnhancement ]
   workflow_dispatch: # Allow manual triggering
@@ -46,7 +48,7 @@ jobs:
       
       - name: Cache dependencies
         if: steps.changes.outputs.should-continue == 'true'
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ env.CACHE_KEY_PREFIX }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('**/requirements*.txt') }}
@@ -112,7 +114,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
       
       - name: Cache dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ env.CACHE_KEY_PREFIX }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('**/requirements*.txt') }}
@@ -223,7 +225,7 @@ jobs:
           fi
       
       - name: Upload evaluation results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: rag-evaluation-results
           path: evaluation_results/
@@ -260,7 +262,7 @@ jobs:
           safety check --json --output safety-report.json || true
       
       - name: Upload security reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: security-reports
           path: |
