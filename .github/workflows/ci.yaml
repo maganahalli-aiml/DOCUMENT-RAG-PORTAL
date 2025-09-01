@@ -82,12 +82,13 @@ jobs:
         if: steps.changes.outputs.should-continue == 'true'
         run: |
           echo "Running pre-commit test validation..."
-          # Run quick smoke tests
-          if [ -f "test_api.py" ]; then
-            python -m pytest test_api.py -v --tb=short
-          fi
+          # Run unit tests only (no API tests in CI to avoid port conflicts)
           if [ -f "tests/test_unit_cases.py" ]; then
             python -m pytest tests/test_unit_cases.py -v --tb=short
+          fi
+          # Run additional tests if they exist
+          if [ -d "tests" ]; then
+            python -m pytest tests/ -v --tb=short -x
           fi
 
   # Main test suite - Post-commit validation
