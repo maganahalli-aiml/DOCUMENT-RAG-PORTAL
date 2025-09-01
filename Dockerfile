@@ -43,11 +43,16 @@ COPY --from=builder /root/.local /home/appuser/.local
 # Set workdir
 WORKDIR /app
 
-# Copy environment file
-COPY .env .
-
-# Copy source code (excluding files in .dockerignore)
+# Copy source code first (excluding files in .dockerignore)
 COPY --chown=appuser:appuser . .
+
+# Handle environment file - use template if .env doesn't exist
+RUN if [ ! -f .env ]; then \
+        echo "Creating .env from template..."; \
+        cp .env.template .env; \
+    else \
+        echo "Using existing .env file"; \
+    fi
 
 # Create necessary directories for runtime data
 RUN mkdir -p data faiss_index logs && \

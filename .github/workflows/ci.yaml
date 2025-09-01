@@ -290,6 +290,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       
+      - name: Prepare environment for Docker build
+        run: |
+          echo "Preparing Docker build environment..."
+          # Create .env from template if it doesn't exist
+          if [ ! -f .env ]; then
+            echo "Creating .env from .env.template for Docker build..."
+            cp .env.template .env
+          fi
+      
       - name: Validate Docker build
         run: |
           echo "Validating Docker build..."
