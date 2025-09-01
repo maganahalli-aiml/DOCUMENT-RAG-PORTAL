@@ -3,9 +3,7 @@ name: Document RAG Portal CI/CD
 
 on:
   push:
-    branche      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:[ master, main, ragEnhancement, develop ]
+    branches: [ master, main, ragEnhancement, develop ]
   pull_request:
     branches: [ master, main, ragEnhancement ]
   workflow_dispatch: # Allow manual triggering
